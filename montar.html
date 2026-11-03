@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Montar a parede</title>
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/montar.css">
+</head>
+<body>
+  <header class="topo">
+    <a class="voltar" href="./" aria-label="Voltar"><i data-lucide="arrow-left"></i></a>
+    <h1>Montar a parede</h1>
+    <div class="topo-acoes">
+      <button id="bt-novo" class="bt bt-linha"><i data-lucide="square-plus"></i><span>Quadro</span></button>
+      <button id="bt-ver" class="bt bt-linha"><i data-lucide="eye"></i><span>Prévia 3D</span></button>
+      <button id="bt-salvar" class="bt bt-ouro"><i data-lucide="save"></i><span>Salvar</span></button>
+    </div>
+  </header>
+
+  <div id="faixa-rascunho" class="faixa" hidden>
+    <span>Há mudanças guardadas neste navegador que ainda não foram salvas na parede.</span>
+    <button id="bt-continuar" class="bt-mini">Continuar delas</button>
+    <button id="bt-descartar" class="bt-mini">Descartar</button>
+  </div>
+
+  <main class="area">
+    <section class="mesa">
+      <div class="regua-info"><span id="medidas"></span><span>Arraste para mover. Puxe o canto para mudar o tamanho (Shift mantém a proporção). Setas movem 1 cm.</span></div>
+      <div id="parede" class="parede" tabindex="0"></div>
+      <ul id="avisos" class="avisos"></ul>
+    </section>
+
+    <aside class="painel">
+      <div id="painel-quadro" hidden>
+        <div class="painel-cab">
+          <h2 id="pq-titulo">Quadro</h2>
+          <div>
+            <button id="pq-duplicar" class="bt-icone" title="Duplicar"><i data-lucide="copy"></i></button>
+            <button id="pq-remover" class="bt-icone perigo" title="Remover"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
+        <label class="campo">Moldura
+          <div id="pq-estilos" class="estilos"></div>
+        </label>
+        <div class="linha2">
+          <label class="campo">Largura (cm)<input id="pq-w" type="number" min="8" max="200" step="1"></label>
+          <label class="campo">Altura (cm)<input id="pq-h" type="number" min="8" max="200" step="1"></label>
+        </div>
+        <p class="nota" id="pq-externo"></p>
+        <button id="pq-proporcao" class="bt-mini largo">Usar a proporção da foto ou vídeo</button>
+        <div id="pq-foco" class="foco">
+          <label class="campo">Enquadramento na horizontal<input id="pq-fx" type="range" min="0" max="100"></label>
+          <label class="campo">Enquadramento na vertical<input id="pq-fy" type="range" min="0" max="100"></label>
+        </div>
+        <div class="campo">Foto ou vídeo
+          <div id="pq-midias" class="midias"></div>
+        </div>
+      </div>
+
+      <div id="painel-parede">
+        <h2>A parede</h2>
+        <label class="campo">Título<input id="pp-titulo" type="text" maxlength="40"></label>
+        <label class="campo">Dedicatória<textarea id="pp-dedicatoria" rows="2" maxlength="160"></textarea></label>
+        <div class="linha2">
+          <label class="campo">Largura (m)<input id="pp-w" type="number" min="1" max="8" step="0.05"></label>
+          <label class="campo">Altura (m)<input id="pp-h" type="number" min="1" max="5" step="0.05"></label>
+        </div>
+        <div class="linha2">
+          <label class="campo">Folha: da esquerda (cm)<input id="pp-mx" type="number" step="1"></label>
+          <label class="campo">Folha: de baixo (cm)<input id="pp-my" type="number" step="1"></label>
+        </div>
+        <label class="campo">Tamanho do quadrado preto
+          <select id="pp-lado">
+            <option value="0.17">17 cm (folha A4)</option>
+            <option value="0.25">25 cm (folha A3)</option>
+          </select>
+        </label>
+        <p class="nota">Se mudar a folha (lugar ou tamanho), imprima de novo pela página <a href="imprimir.html">Imprimir a folha</a>.</p>
+        <h3>Fotos e vídeos disponíveis</h3>
+        <p class="nota">Para incluir novas: coloque os arquivos na pasta <code>midia-original</code> do projeto e rode <code>tools/preparar_midias.py</code>. Elas aparecem aqui.</p>
+        <div id="pp-midias" class="midias pequenas"></div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+  <script type="module" src="js/montar.js"></script>
+</body>
+</html>

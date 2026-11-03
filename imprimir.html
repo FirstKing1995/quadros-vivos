@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Folha da parede</title>
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Manrope:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --ouro: #b8862f; --tinta: #2a2118; }
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #2a2118; font-family: "Manrope", system-ui, sans-serif; color: var(--tinta); }
+    .instrucoes { max-width: 640px; margin: 0 auto; padding: 24px 16px; color: #efe6d2; line-height: 1.5; }
+    .instrucoes h1 { font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 500; font-size: 40px; margin: 0 0 8px; color: #f0cf86; }
+    .instrucoes ol { padding-left: 20px; }
+    .instrucoes li { margin-bottom: 6px; }
+    .bt { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 22px; border: 0; border-radius: 999px; font: 600 16px "Manrope", sans-serif; color: #24180b; background: linear-gradient(180deg, #f0cf86, #d1a74e); cursor: pointer; }
+    .folha-wrap { overflow-x: auto; padding: 0 16px 40px; }
+    .folha { position: relative; width: 210mm; height: 297mm; margin: 0 auto; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    .topo { position: absolute; left: 0; right: 0; top: 16mm; text-align: center; }
+    .topo .marca { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 30pt; color: var(--ouro); line-height: 1; }
+    .topo .sub { margin-top: 3mm; font-size: 9.5pt; letter-spacing: .18em; text-transform: uppercase; color: #6d5d47; }
+    .marcador { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+    .marcador svg { display: block; }
+    .cruz { position: absolute; width: 6mm; height: 6mm; }
+    .cruz::before, .cruz::after { content: ""; position: absolute; background: #bbb; }
+    .cruz::before { left: 50%; top: 0; bottom: 0; width: .25mm; margin-left: -.125mm; }
+    .cruz::after { top: 50%; left: 0; right: 0; height: .25mm; margin-top: -.125mm; }
+    .base { position: absolute; left: 20mm; right: 20mm; bottom: 14mm; display: flex; align-items: center; gap: 6mm; }
+    .base #qr img { display: block; width: 26mm; height: 26mm; image-rendering: pixelated; }
+    .base p { margin: 0; font-size: 9pt; line-height: 1.45; color: #4a3d2e; }
+    .base strong { color: var(--tinta); }
+    .regua { font-size: 8pt; color: #8a7a62; margin-top: 1.5mm; }
+    @media print {
+      body { background: #fff; }
+      .instrucoes { display: none; }
+      .folha-wrap { padding: 0; overflow: visible; }
+      .folha { box-shadow: none; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="instrucoes">
+    <h1>Folha da parede</h1>
+    <ol>
+      <li>Imprima em <strong>A4, tamanho real (100%)</strong>. Desligue "ajustar à página".</li>
+      <li>Meça o quadrado preto com uma régua: precisa dar <strong id="medida">17 cm</strong> de lado. Se der diferente, a parede aparece fora de escala.</li>
+      <li>Cole a folha bem lisa, de pé, com o centro dela no <strong id="ponto">centro da parede</strong>. Fita dupla face nos quatro cantos evita que ela ondule.</li>
+      <li>Pela câmera, o quadro do meio aparece por cima da folha e a esconde.</li>
+    </ol>
+    <button class="bt" onclick="print()">Imprimir</button>
+  </div>
+  <div class="folha-wrap">
+    <div class="folha" id="folha">
+      <div class="topo">
+        <div class="marca" id="titulo">Quadros Vivos</div>
+        <div class="sub">Aponte o app para esta folha</div>
+      </div>
+      <div class="marcador" id="marcador"></div>
+      <div class="base">
+        <div id="qr"></div>
+        <div>
+          <p><strong>Para abrir:</strong> leia o código com a câmera do celular e toque em "Abrir a parede". Funciona no Chrome do Android.</p>
+          <p class="regua">Conferência: o quadrado preto tem <span id="medida2">17 cm</span> de lado. Centro da folha = centro do quadrado.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script type="module">
+    import { marcadorSVG } from './js/folha.js';
+    const p = await (await fetch('parede.json?v=' + Date.now())).json();
+    const mk = p.marcador;
+    const ladoMM = Math.round(mk.lado * 1000);
+    document.getElementById('marcador').innerHTML = marcadorSVG(mk.id, ladoMM);
+    for (const id of ['medida', 'medida2']) document.getElementById(id).textContent = (ladoMM / 10).toLocaleString('pt-BR') + ' cm';
+    const meio = Math.abs(mk.x - p.parede.largura / 2) < 0.01 && Math.abs(mk.y - p.parede.altura / 2) < 0.01;
+    document.getElementById('ponto').textContent = meio ? 'centro da parede'
+      : `ponto a ${Math.round(mk.x * 100)} cm da borda esquerda e ${Math.round(mk.y * 100)} cm acima da borda de baixo da área dos quadros`;
+    if (p.titulo) document.getElementById('titulo').textContent = p.titulo;
+    // cruzes nos cantos: ajudam a alinhar a folha na parede
+    const f = document.getElementById('folha');
+    for (const [x, y] of [[8, 8], [196, 8], [8, 283], [196, 283]]) {
+      const c = document.createElement('div'); c.className = 'cruz'; c.style.left = x + 'mm'; c.style.top = y + 'mm'; f.appendChild(c);
+    }
+    const link = new URL('./', location.href).href;
+    const q = qrcode(0, 'M'); q.addData(link); q.make();
+    document.getElementById('qr').innerHTML = q.createImgTag(4, 0, 'Código para abrir a parede');
+  </script>
+</body>
+</html>

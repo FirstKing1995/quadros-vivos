@@ -1,0 +1,18 @@
+[
+ {
+  "arquivo": "midia/exemplo-video-1.mp4",
+  "tipo": "video",
+  "w": 768,
+  "h": 480,
+  "duracao": 8.0,
+  "exemplo": true
+ },
+ {
+  "arquivo": "midia/exemplo-video-2.mp4",
+  "tipo": "video",
+  "w": 540,
+  "h": 540,
+  "duracao": 8.0,
+  "exemplo": true
+ }
+]
