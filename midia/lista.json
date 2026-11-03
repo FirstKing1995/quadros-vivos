@@ -1,5 +1,77 @@
 [
  {
+  "arquivo": "midia/img-20241027-112944343-hdr.jpg",
+  "tipo": "foto",
+  "w": 949,
+  "h": 1280,
+  "original": "IMG_20241027_112944343_HDR.jpg"
+ },
+ {
+  "arquivo": "midia/img-20241027-113409688-hdr.jpg",
+  "tipo": "foto",
+  "w": 960,
+  "h": 1280,
+  "original": "IMG_20241027_113409688_HDR.jpg"
+ },
+ {
+  "arquivo": "midia/img-20260310-231804.jpg",
+  "tipo": "foto",
+  "w": 719,
+  "h": 703,
+  "original": "IMG_20260310_231804.jpg"
+ },
+ {
+  "arquivo": "midia/img-20260913-121519065-hdr.jpg",
+  "tipo": "foto",
+  "w": 720,
+  "h": 1280,
+  "original": "IMG_20260913_121519065_HDR.jpg"
+ },
+ {
+  "arquivo": "midia/img-20260921-205917340-hdr.jpg",
+  "tipo": "foto",
+  "w": 720,
+  "h": 1280,
+  "original": "IMG_20260921_205917340_HDR.jpg"
+ },
+ {
+  "arquivo": "midia/img-20261014-204029018.jpg",
+  "tipo": "foto",
+  "w": 720,
+  "h": 1280,
+  "original": "IMG_20261014_204029018.jpg"
+ },
+ {
+  "arquivo": "midia/img-20261021-192838006-hdr.jpg",
+  "tipo": "foto",
+  "w": 720,
+  "h": 1280,
+  "original": "IMG_20261021_192838006_HDR.jpg"
+ },
+ {
+  "arquivo": "midia/meitu-20261017-182851054.jpg",
+  "tipo": "foto",
+  "w": 720,
+  "h": 1280,
+  "original": "MEITU_20261017_182851054.jpg"
+ },
+ {
+  "arquivo": "midia/screenshot-2026-03-18-23-53-25-421-com-instagram-android-1.jpg",
+  "tipo": "foto",
+  "w": 260,
+  "h": 668,
+  "original": "Screenshot_2026-03-18-23-53-25-421_com.instagram.android (1).jpg"
+ },
+ {
+  "arquivo": "midia/vid-20261031-145755483.mp4",
+  "tipo": "video",
+  "w": 960,
+  "h": 540,
+  "capa": "midia/vid-20261031-145755483.jpg",
+  "duracao": 5.5,
+  "original": "VID_20261031_145755483.mp4"
+ },
+ {
   "arquivo": "midia/exemplo-video-1.mp4",
   "tipo": "video",
   "w": 768,

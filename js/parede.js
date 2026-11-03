@@ -148,12 +148,19 @@ export class Parede {
     this.pVel = new Float32Array(N * 3); this.pVida = new Float32Array(N); this.pMax = new Float32Array(N);
     geo.setAttribute('position', new THREE.BufferAttribute(this.pPos, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(this.pCor, 3));
-    const c = document.createElement('canvas'); c.width = c.height = 64;
-    const g = c.getContext('2d');
-    const rg = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-    rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(0.25, 'rgba(255,230,170,.8)'); rg.addColorStop(1, 'rgba(255,200,90,0)');
-    g.fillStyle = rg; g.fillRect(0, 0, 64, 64);
-    const mat = new THREE.PointsMaterial({ size: 0.022, map: new THREE.CanvasTexture(c), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+    // ouro com mistura normal (não aditiva): numa parede branca o brilho aditivo some no branco
+    const mat = new THREE.ShaderMaterial({
+      vertexColors: true, transparent: true, depthWrite: false, toneMapped: false,
+      uniforms: { uTam: { value: 0.022 * 700 } },
+      vertexShader: `uniform float uTam; varying float vA;
+        void main(){ vA = color.r; vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = uTam / -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `varying float vA;
+        void main(){ float r = length(gl_PointCoord - 0.5);
+          float a = smoothstep(0.5, 0.1, r) * vA; if (a < 0.01) discard;
+          vec3 cor = mix(vec3(0.72, 0.5, 0.16), vec3(1.0, 0.9, 0.62), smoothstep(0.3, 0.0, r));
+          gl_FragColor = vec4(cor, a); }`
+    });
     this.pontos = new THREE.Points(geo, mat);
     this.pontos.frustumCulled = false;
     this.pProx = 0; this.pN = N;
@@ -184,7 +191,7 @@ export class Parede {
 
   _onda() {
     const mat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+      transparent: true, depthWrite: false, toneMapped: false,
       uniforms: { uRaio: { value: 0 }, uForca: { value: 0 } },
       vertexShader: 'varying vec2 vP; void main(){ vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
       fragmentShader: `uniform float uRaio; uniform float uForca; varying vec2 vP;
@@ -193,7 +200,7 @@ export class Parede {
           float anel = exp(-pow((d - uRaio) / 0.05, 2.0));
           float rastro = smoothstep(uRaio, 0.0, d) * 0.12 * smoothstep(0.0, 0.3, uRaio);
           float a = (anel + rastro) * uForca;
-          gl_FragColor = vec4(vec3(1.0, 0.78, 0.38) * a, a);
+          gl_FragColor = vec4(mix(vec3(0.78, 0.55, 0.18), vec3(1.0, 0.86, 0.5), anel), min(1.0, a * 0.85));
         }`
     });
     this.onda = new THREE.Mesh(new THREE.PlaneGeometry(5, 4), mat);
