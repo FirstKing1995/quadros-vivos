@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Parede } from './parede.js';
 import { SessaoAR, arDisponivel } from './xr.js';
+import { SessaoCamera } from './camera.js';
 import { desenharFolha } from './folha.js';
 
 const $ = (s) => document.querySelector(s);
@@ -48,7 +49,18 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 });
 
-let layout, parede, sessao;
+let layout, parede, sessao, temAR = false, erroAR = '';
+
+// linha de diagnóstico no rodapé: diz o que o aparelho e o navegador oferecem
+function diagnostico() {
+  const ua = navigator.userAgent;
+  const aparelho = (/Android [^;)]*;\s*([^;)]+)/.exec(ua) || [])[1] || (/(iPhone|iPad|Windows|Mac OS X|Linux)/.exec(ua) || [])[1] || 'aparelho';
+  const nav = /SamsungBrowser\/(\d+)/.test(ua) ? 'Samsung Internet' : /EdgA?\/(\d+)/.test(ua) ? 'Edge'
+    : /Instagram|FBAN|FBAV|WhatsApp|; wv\)/.test(ua) ? 'navegador interno de app' : /Chrome\/(\d+)/.test(ua) ? 'Chrome ' + /Chrome\/(\d+)/.exec(ua)[1] : 'outro navegador';
+  const partes = [aparelho.trim(), nav, 'WebXR ' + (navigator.xr ? 'sim' : 'não'), 'ARCore ' + (temAR ? 'sim' : 'não')];
+  if (erroAR) partes.push('erro: ' + erroAR);
+  $('#diag').textContent = partes.join(' · ');
+}
 
 async function preparar() {
   if (window.lucide) lucide.createIcons();
@@ -59,34 +71,32 @@ async function preparar() {
   document.title = (layout.titulo || 'Nossa parede') + ' | Quadros Vivos';
   const total = layout.quadros.length;
   parede = new Parede(layout);
-  const [temAR] = await Promise.all([
+  [temAR] = await Promise.all([
     arDisponivel(),
     parede.carregar((f) => { $('#status').textContent = `Preparando ${total} quadros... ${Math.round(f * 100)}%`; })
   ]);
   cena.add(parede.grupo);
   $('#bt-previa').disabled = false;
-  if (temAR) {
-    $('#bt-abrir').disabled = false;
-    $('#status').textContent = `${total} quadros prontos.`;
-  } else {
-    $('#status').textContent = '';
-    $('#aviso-ar').hidden = false;
-    $('#bt-abrir').hidden = true;
-    $('#bt-previa').classList.replace('bt-linha', 'bt-ouro');
-  }
+  $('#bt-abrir').disabled = false;
+  $('#status').textContent = `${total} quadros prontos.`;
+  // sem ARCore a parede abre no modo simples (câmera comum)
+  $('#aviso-ar').hidden = temAR;
+  diagnostico();
   if (params.has('previa')) abrirPrevia();
 }
 
 // ---------- realidade aumentada ----------
 const ui = {
-  procurando(temCamera) {
+  procurando(modo) {
     $('#busca').hidden = false; $('#busca').classList.remove('sumir');
     ui.progresso(0);
-    $('#busca-titulo').textContent = temCamera ? 'Procure a folha' : 'Mire no centro da folha';
-    $('#busca-dica').textContent = temCamera
-      ? 'Aponte para a folha na parede, a cerca de um passo dela.'
-      : 'Mexa o celular devagar até o círculo dourado aparecer sobre a folha. Então toque na tela.';
+    $('#busca-titulo').textContent = modo === false ? 'Mire no centro da folha' : 'Procure a folha';
+    $('#busca-dica').textContent = modo === 'camera'
+      ? 'Afaste-se uns três passos e deixe a folha inteira na tela. A parede aparece em volta dela.'
+      : modo ? 'Aponte para a folha na parede, a cerca de um passo dela.'
+        : 'Mexa o celular devagar até o círculo dourado aparecer sobre a folha. Então toque na tela.';
   },
+  toast(t) { toast(t); },
   progresso(f) { $('#busca-arco').style.strokeDashoffset = String(339.3 * (1 - f)); },
   dica(t) { $('#busca-dica').textContent = t; },
   podeTocar(sim) {
@@ -97,7 +107,9 @@ const ui = {
     ui.progresso(1);
     $('#busca').classList.add('sumir');
     setTimeout(() => { $('#busca').hidden = true; }, 450);
-    toast(origem === 'toque' ? 'Parede no lugar. Se a folha aparecer, ajusto sozinho.' : 'Toque num quadro com vídeo para ouvir o som.', 4200);
+    toast(origem === 'toque' ? 'Parede no lugar. Se a folha aparecer, ajusto sozinho.'
+      : origem === 'camera' ? 'Mantenha a folha na tela. Toque num quadro com vídeo para ouvir.'
+        : 'Toque num quadro com vídeo para ouvir o som.', 4200);
   },
   toque(r) {
     if (r.som === true) toast('Som ligado neste quadro.');
@@ -105,29 +117,73 @@ const ui = {
   },
   fim() {
     $('#camada').hidden = true;
+    $('#palco').hidden = true;
     $('#inicio').hidden = false;
+    sessao = null;
   }
 };
 
-async function abrirAR() {
+async function abrir() {
   parede.liberarVideos(); // ainda dentro do toque: libera os vídeos
-  $('#camada').hidden = false;
-  if (!sessao) {
+  if (temAR && !params.has('simples')) {
+    $('#camada').hidden = false;
     sessao = new SessaoAR({ renderer, cena, camera, parede, camada: $('#camada'), ui, marcador: layout.marcador });
+    try {
+      await sessao.iniciar();
+      $('#inicio').hidden = true;
+      return;
+    } catch (e) {
+      console.error(e);
+      erroAR = (e && (e.name || e.message)) || 'falhou';
+      diagnostico();
+      $('#camada').hidden = true;
+    }
   }
+  abrirCamera();
+}
+
+// modo simples: câmera comum, sem ARCore
+async function abrirCamera() {
+  const c = new SessaoCamera({ renderer, cena, parede, ui, marcador: layout.marcador });
+  sessao = c;
+  $('#camada').hidden = false; $('#palco').hidden = false; $('#inicio').hidden = true;
   try {
-    await sessao.iniciar();
-    $('#inicio').hidden = true;
+    await c.iniciar(params.has('camerafalsa') ? cameraFalsa() : undefined);
   } catch (e) {
     console.error(e);
-    $('#camada').hidden = true;
-    $('#status').textContent = 'Não consegui abrir a câmera em realidade aumentada. Confira se o Chrome tem permissão de câmera e se o Google Play Services para RA está atualizado.';
+    sessao = null;
+    $('#camada').hidden = true; $('#palco').hidden = true; $('#inicio').hidden = false;
+    const negou = e && /NotAllowed|Permission/i.test(e.name + e.message);
+    $('#status').textContent = negou
+      ? 'A câmera foi bloqueada. Toque no cadeado ao lado do endereço, libere a Câmera e tente de novo.'
+      : 'Não consegui abrir a câmera: ' + ((e && (e.message || e.name)) || 'erro desconhecido');
   }
+}
+
+// para testar no computador: um vídeo de mentira com a folha balançando (?simples&camerafalsa)
+function cameraFalsa() {
+  const cv = document.createElement('canvas'); cv.width = 720; cv.height = 1280;
+  const g = cv.getContext('2d');
+  const folha = document.createElement('canvas'); folha.width = 420; folha.height = 594;
+  desenharFolha(folha.getContext('2d'), 420, 594, layout.marcador);
+  const t0 = performance.now();
+  (function desenhar() {
+    const t = (performance.now() - t0) / 1000;
+    g.fillStyle = '#e9e5de'; g.fillRect(0, 0, 720, 1280);
+    g.save();
+    g.translate(360 + Math.sin(t * 0.7) * 60, 700 + Math.cos(t * 0.5) * 40);
+    g.rotate(Math.sin(t * 0.4) * 0.12);
+    const k = 0.22 + Math.sin(t * 0.3) * 0.03; // folha vista de uns 2,5 m
+    g.drawImage(folha, -210 * k, -297 * k, 420 * k, 594 * k);
+    g.restore();
+    requestAnimationFrame(desenhar);
+  })();
+  return cv.captureStream(30);
 }
 
 // botões sobre a câmera não podem virar "toque na cena"
 for (const b of document.querySelectorAll('.camada .bt-redondo')) b.addEventListener('beforexrselect', (e) => e.preventDefault());
-$('#ar-sair').addEventListener('click', () => sessao && sessao.encerrar());
+$('#ar-sair').addEventListener('click', () => { if (sessao) sessao.encerrar(); else ui.fim(); });
 $('#ar-repor').addEventListener('click', () => { if (sessao) { sessao.procurar(); toast('Aponte para a folha de novo.'); } });
 $('#ar-mudo').addEventListener('click', () => { parede.silenciar(); toast('Todos os quadros em silêncio.'); });
 
@@ -204,13 +260,18 @@ renderer.domElement.addEventListener('pointerdown', (e) => { baixo = [e.clientX,
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (renderer.xr.isPresenting || !baixo || Math.hypot(e.clientX - baixo[0], e.clientY - baixo[1]) > 6) return;
   const r = renderer.domElement.getBoundingClientRect();
+  if (sessao instanceof SessaoCamera) {
+    const res = sessao.tocar(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    if (res) ui.toque(res);
+    return;
+  }
   const rc = new THREE.Raycaster();
   rc.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
   const res = parede.tocar(rc);
   if (res && res.som !== null) toast(res.som ? 'Som ligado neste quadro.' : 'Som desligado.');
 });
 
-$('#bt-abrir').addEventListener('click', abrirAR);
+$('#bt-abrir').addEventListener('click', abrir);
 $('#bt-previa').addEventListener('click', abrirPrevia);
 $('#pv-voltar').addEventListener('click', fecharPrevia);
 $('#pv-repetir').addEventListener('click', () => parede.aparecer());
